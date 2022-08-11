@@ -4,53 +4,37 @@ import { SubscribeFunction } from "./definition.ts";
 // import { BlockActionsRouter } from "deno-slack-sdk/mod.ts";
 import { getObjectsList, SObject } from "../../backend/salesforce.ts";
 
-/* const ActionsRouter = BlockActionsRouter(SubscribeFunction);
-
-export const blockActions = ActionsRouter.addHandler(
-  ["subscribe_modal", "channel_id", "sobject"],
-  async ({ action, body, token }) => {
-    console.log("Incoming action handler invocation", action);
-    const client = SlackAPI(token);
-
-    const outputs = {
-      subscribed: true,
-    };
-
-    // we explicitly marked it as incomplete in the main function handler.
-    await client.functions.completeSuccess({
-      function_execution_id: body.function_data.execution_id,
-      outputs,
-    });
-  },
-); */
-
 export const viewSubmission = async (
   { body, view, inputs, token, env }: any,
 ) => {
   console.log("View submission invoked!");
   if (view.callback_id === "subscribe_modal") {
-    const { messageTS } = JSON.parse(view.private_metadata);
+    // const { messageTS } = JSON.parse(view.private_metadata);
+    // this timestamp needs to be grabbed from somewhere, it is not being passed into the view
+    const messageTS = '123456789';
 
-    const reason = (view.state.values?.reason_block?.reason_input?.value ?? "")
-      .trim();
+    // const reason = (view.state.values?.reason_block?.reason_input?.value ?? "")
+    //   .trim();
+    //this value wasn't being grabbed properly from the view, so I hard coded it
+    const reason = 'Test reason, this needs to be changed to grab the reason from the view'
 
-    const outputs = {
-      reviewer: body.user.id,
-      approved: false,
-      message_ts: messageTS,
-      denial_reason: reason,
-    };
+    // const outputs = {
+    //   reviewer: body.user.id,
+    //   approved: false,
+    //   message_ts: messageTS,
+    //   denial_reason: reason,
+    // };
 
     // Need to provide comments if not approving
-    if (!outputs.denial_reason || outputs.denial_reason == "lgtm") {
-      return {
-        response_action: "errors",
-        errors: {
-          "reason_block":
-            "Please provide an adequate reason for denying the request",
-        },
-      };
-    }
+    // if (!outputs.denial_reason || outputs.denial_reason == "lgtm") {
+    //   return {
+    //     response_action: "errors",
+    //     errors: {
+    //       "reason_block":
+    //         "Please provide an adequate reason for denying the request",
+    //     },
+    //   };
+    // }
 
     const client = SlackAPI(token, {
       slackApiUrl: env.SLACK_API_URL,
@@ -74,11 +58,18 @@ export const viewSubmission = async (
     if (!updateMsgResp.ok) {
       console.log("error updating msg", updateMsgResp);
     }
- */
+ */ 
+    //we either need to change the function definiton to include more fields in the output,
+    // or we leave this output the same and just retun the subscribed: true boolean
+    const outputs = {
+      subscribed: true,
+    };
     const completeResp = await client.functions.completeSuccess({
       function_execution_id: body.function_data.execution_id,
       outputs,
     });
+    console.log("completeResp: ")
+    console.log(completeResp)
     if (!completeResp.ok) {
       console.log("error completing fn", completeResp);
     }
@@ -92,22 +83,33 @@ const subscribe_modal: SlackFunctionHandler<
   const client = SlackAPI(token);
 
   // Add the dynamic lookups - dialog is now working
-  const sobjects: SObject[] = await getObjectsList(token, inputs.channel_id);
-  const sobjectOptions = [];
-
+  // const sobjects: SObject[] = await getObjectsList(token, inputs.channel_id);
+  
+  // Need to comment this back in since I am assuming this code is working for Steve
+  // const sobjectOptions = [];
   // Get the sobjects available for this user
-  if (sobjects != null && sobjects.length > 0) {
-    for (let x = 0; x < sobjects.length; x++) {
-      sobjectOptions.push({
-        "text": {
-          "type": "plain_text",
-          "text": sobjects[x].label,
-          "emoji": true,
-        },
-        "value": sobjects[x].name,
-      });
+  // if (sobjects != null && sobjects.length > 0) {
+  //   for (let x = 0; x < sobjects.length; x++) {
+  //     sobjectOptions.push({
+  //       "text": {
+  //         "type": "plain_text",
+  //         "text": sobjects[x].label,
+  //         "emoji": true,
+  //       },
+  //       "value": sobjects[x].name,
+  //     });
+  //   }
+  // }
+  const sobjectOptions = [
+    {
+      "text": {
+        "type": "plain_text",
+        "emoji": true,
+        "text": "Save it"
+      },
+      "value": "value-2"
     }
-  }
+  ]
   // console.log(`Options block kit: ${JSON.stringify(sobjectOptions)}`);
 
   const result = await client.views.open({
